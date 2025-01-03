@@ -206,19 +206,19 @@ public class Badges {
 
 		public boolean meta;
 
-		public int image;
+		public int imageIndex;
 		public BadgeType type;
 
 		Badge(){
 			this(-1, BadgeType.HIDDEN);
 		}
 
-		Badge( int image ) {
-			this( image, BadgeType.LOCAL );
+		Badge( int imageIndex) {
+			this(imageIndex, BadgeType.LOCAL );
 		}
 
-		Badge( int image, BadgeType type ) {
-			this.image = image;
+		Badge(int imageIndex, BadgeType type ) {
+			this.imageIndex = imageIndex;
 			this.type = type;
 		}
 
@@ -331,8 +331,7 @@ public class Badges {
 	}
 
 	public static int totalUnlocked(boolean global){
-		if (global) return Badges.global.size();
-		else        return Badges.local.size();
+		return global ? Badges.global.size() : Badges.local.size();
 	}
 
 	public static void validateMonstersSlain() {
@@ -370,8 +369,7 @@ public class Badges {
 		Badge badge = null;
 		
 		if (!local.contains( Badge.GOLD_COLLECTED_1 ) && Statistics.goldCollected >= 250) {
-			if (badge != null) unlock(badge);
-			badge = Badge.GOLD_COLLECTED_1;
+            badge = Badge.GOLD_COLLECTED_1;
 			local.add( badge );
 		}
 		if (!local.contains( Badge.GOLD_COLLECTED_2 ) && Statistics.goldCollected >= 1000) {

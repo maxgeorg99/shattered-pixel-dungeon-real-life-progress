@@ -91,7 +91,7 @@ public class BadgesList extends ScrollPane {
 			super();
 			
 			this.badge = badge;
-			icon.copy( BadgeBanner.image( badge.image ));
+			icon.copy( BadgeBanner.image( badge.imageIndex));
 			label.text( badge.title() );
 		}
 		

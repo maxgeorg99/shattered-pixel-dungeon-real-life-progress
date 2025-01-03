@@ -110,7 +110,7 @@ public class BadgesGrid extends Component {
 			this.badge = badge;
 			this.unlocked = unlocked;
 
-			icon = BadgeBanner.image(badge.image);
+			icon = BadgeBanner.image(badge.imageIndex);
 			if (!unlocked) {
 				icon.brightness(0.4f);
 			}
@@ -132,7 +132,7 @@ public class BadgesGrid extends Component {
 			super.update();
 
 			if (unlocked && Random.Float() < Game.elapsed * 0.1) {
-				BadgeBanner.highlight( icon, badge.image );
+				BadgeBanner.highlight( icon, badge.imageIndex);
 			}
 		}
 

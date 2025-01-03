@@ -154,6 +154,8 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.services.health.Health;
+import com.shatteredpixel.shatteredpixeldungeon.services.health.HealthData;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.AttackIndicator;
@@ -185,11 +187,9 @@ public class Hero extends Char {
 		
 		alignment = Alignment.ALLY;
 	}
-	
+
 	public static final int MAX_LEVEL = 30;
 
-	public static final int STARTING_STR = 10;
-	
 	private static final float TIME_TO_REST		    = 1f;
 	private static final float TIME_TO_SEARCH	    = 2f;
 	private static final float HUNGER_FOR_SEARCH	= 6f;
@@ -200,8 +200,11 @@ public class Hero extends Char {
 	public ArrayList<LinkedHashMap<Talent, Integer>> talents = new ArrayList<>();
 	public LinkedHashMap<Talent, Talent> metamorphedTalents = new LinkedHashMap<>();
 	
-	private int attackSkill = 10;
-	private int defenseSkill = 5;
+	private int attackSkill;
+	private int defenseSkill;
+	private float evasion;
+	private float accuracy;
+	private float speed;
 
 	public boolean ready = false;
 	public boolean damageInterrupt = true;
@@ -215,29 +218,66 @@ public class Hero extends Char {
 	public Belongings belongings;
 	
 	public int STR;
-	
+
 	public float awareness;
 	
 	public int lvl = 1;
 	public int exp = 0;
 	
 	public int HTBoost = 0;
-	
+
+	public HeroStats baseStats;
+
 	private ArrayList<Mob> visibleEnemies;
 
 	//This list is maintained so that some logic checks can be skipped
 	// for enemies we know we aren't seeing normally, resulting in better performance
 	public ArrayList<Mob> mindVisionEnemies = new ArrayList<>();
 
+	public void applyHealthDataBuffs(ArrayList<HealthData> healthData) {
+		int weightTrainingMinutes = 0;
+		float runKM = 0;
+
+		// Accumulate total minutes of weight training
+		for (HealthData data : healthData) {
+			if ("weight_training".equals(data.type)) {
+				weightTrainingMinutes += data.value;
+			}
+			if("running".equals(data.type)) {
+				runKM += data.value / 1000;
+			}
+		}
+
+		// Calculate strength bonus
+		int bonusStrength = weightTrainingMinutes / 60; // +1 STR for every 60 minutes
+		STR += bonusStrength;
+		speed *= runKM/100;
+
+		// Log or notify the user about the update
+		System.out.println("Applied " + bonusStrength + " bonus STR from " + weightTrainingMinutes + " minutes of weight training.");
+	}
+
+
 	public Hero() {
 		super();
 
-		HP = HT = 20;
-		STR = STARTING_STR;
-		
+		baseStats = new HeroStats();
+
+		HP = HT = baseStats.getBaseHT();
+		STR = baseStats.getBaseStr();
+		attackSkill = baseStats.getBaseAttackSkill();
+		defenseSkill = baseStats.getBaseDefenseSkill();
+		speed = baseStats.getBaseSpeed();
+		evasion = baseStats.getBaseEvasion();
+		accuracy = baseStats.getBaseAccuracy();
+
 		belongings = new Belongings( this );
 		
 		visibleEnemies = new ArrayList<>();
+
+		if (Health.dataAvailable()) {
+			applyHealthDataBuffs(Health.getHealthData());
+		}
 	}
 	
 	public void updateHT( boolean boostHP ){
@@ -478,8 +518,8 @@ public class Hero extends Char {
 	@Override
 	public int attackSkill( Char target ) {
 		KindOfWeapon wep = belongings.attackingWeapon();
-		
-		float accuracy = 1;
+
+		accuracy = 1;
 		accuracy *= RingOfAccuracy.accuracyMultiplier( this );
 		
 		if (wep instanceof MissileWeapon){
@@ -551,8 +591,8 @@ public class Hero extends Char {
 		if (buff(RoundShield.GuardTracker.class) != null){
 			return INFINITE_EVASION;
 		}
-		
-		float evasion = defenseSkill;
+
+		evasion = defenseSkill;
 		
 		evasion *= RingOfEvasion.evasionMultiplier( this );
 
@@ -681,9 +721,6 @@ public class Hero extends Char {
 	
 	@Override
 	public float speed() {
-
-		float speed = super.speed();
-
 		speed *= RingOfHaste.speedMultiplier(this);
 		
 		if (belongings.armor() != null) {
